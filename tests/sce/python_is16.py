@@ -28,11 +28,11 @@ def get_xccdf_values():
         if key.startswith("XCCDF_VALUE_"):
             name = key[12:]
             value = value
-            type_ = os.environ["XCCDF_TYPE_%s" % (name)]
+            type_ = os.environ[f"XCCDF_TYPE_{name}"]
 
             operator = "EQUALS"
             try:
-                operator = os.environ["XCCDF_OPERATOR_%s" % (name)]
+                operator = os.environ[f"XCCDF_OPERATOR_{name}"]
             except:
                 # operator is not mandatory
                 pass

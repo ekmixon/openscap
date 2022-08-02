@@ -64,10 +64,8 @@ class getInputCVE(object):
             raise Exception("Unable to fetch CVE inputs due to {0}"
                             .format(url_error))
 
-        fh = open(dest_file, "wb")
-        fh.write(resp.read())
-        fh.close()
-
+        with open(dest_file, "wb") as fh:
+            fh.write(resp.read())
         # Correct Last-Modified timestamp
         headers = self._parse_http_headers(resp.info())
         resp.close()
@@ -94,7 +92,7 @@ class getInputCVE(object):
         '''
 
         headers_dict = dict(http_headers)
-        return dict( (key.lower(), value) for key, value in headers_dict.items() )
+        return {key.lower(): value for key, value in headers_dict.items()}
 
     def _is_cache_same(self, dest_file, dist_url):
         '''
@@ -153,10 +151,7 @@ class getInputCVE(object):
         input with openscap cve scanning and returns a list
         of those files.
         '''
-        cve_files = []
-        for dist in self.dists:
-            cve_files.append(self._fetch_single(dist))
-        return cve_files
+        return [self._fetch_single(dist) for dist in self.dists]
 
 
 class HeadRequest(urllib.request.Request):

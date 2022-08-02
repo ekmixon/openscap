@@ -144,13 +144,15 @@ class OSCAP_List(list):
 
     def sort(self, item, n=1):
         """This function is not allowed. Please use appropriate function from library."""
-        raise Exception("Sorting %s items in oscap list is not allowed."
-                        % (self.iterator.object[:self.iterator.object.find("_iterator")],))
+        raise Exception(
+            f'Sorting {self.iterator.object[:self.iterator.object.find("_iterator")]} items in oscap list is not allowed.'
+        )
 
     def reverse(self, item, n=1):
         """This function is not allowed. Please use appropriate function from library."""
-        raise Exception("Reversing %s items in oscap list is not allowed."
-                        % (self.iterator.object[:self.iterator.object.find("_iterator")],))
+        raise Exception(
+            f'Reversing {self.iterator.object[:self.iterator.object.find("_iterator")]} items in oscap list is not allowed.'
+        )
 
 
 class OSCAP_Object(object):
@@ -202,11 +204,7 @@ class OSCAP_Object(object):
             """
             newargs = ()
             for arg in args:
-                if isinstance(arg, OSCAP_Object):
-                    newargs += (arg.instance,)
-                else:
-                    newargs += (arg,)
-
+                newargs += (arg.instance, ) if isinstance(arg, OSCAP_Object) else (arg, )
             try:
                 retobj = func()
             except TypeError as err:
@@ -220,11 +218,9 @@ class OSCAP_Object(object):
                             try:
                                 retobj = func(self.instance, *newargs)
                             except TypeError as err:
-                                raise TypeError(
-                                    "Wrong number of arguments in function %s" % (func.__name__,))
+                                raise TypeError(f"Wrong number of arguments in function {func.__name__}")
                     else:
-                        raise TypeError(
-                            "%s: No instance or wrong number of parameters" % (func.__name__))
+                        raise TypeError(f"{func.__name__}: No instance or wrong number of parameters")
 
             if retobj is None:
                 return None
@@ -246,11 +242,7 @@ class OSCAP_Object(object):
         ''' Returns all builtin function accessible through SWIG
             which is corresponding to the current object
         '''
-        funcs = dict()
-        for (k, v) in OSCAP.__dict__.items():
-            if k.startswith(self.object):
-                funcs[k] = v
-        return funcs
+        return {k: v for k, v in OSCAP.__dict__.items() if k.startswith(self.object)}
 
     def introspect_constants(self, value=None, prefix=None):
         '''
@@ -274,7 +266,7 @@ class OSCAP_Object(object):
             return self.__dict__[name]
 
         # cache self.object + "_" + name for perf / clearness purpose
-        obj_name = self.object + "_" + name
+        obj_name = f"{self.object}_{name}"
 
         """ Catch  potential C function overriden in OSCAP_Object
         like xccdf_session_set_rule or xccdf_session_free for instance. """
@@ -291,12 +283,11 @@ class OSCAP_Object(object):
         """ Looking for function object_subject() """
         obj = OSCAP.__dict__.get(obj_name)
 
-        if obj is not None:
-            if callable(obj):
-                return self.__func_wrapper(obj)
+        if obj is not None and callable(obj):
+            return self.__func_wrapper(obj)
 
         """ Looking for function object_get_subject() """
-        obj = OSCAP.__dict__.get(self.object + "_get_" + name)
+        obj = OSCAP.__dict__.get(f"{self.object}_get_{name}")
         if obj is not None:
             try:
                 return self.__func_wrapper(obj)()
@@ -304,7 +295,7 @@ class OSCAP_Object(object):
                 return self.__func_wrapper(obj)
 
         """ Looking if it can be a constructor """
-        obj = OSCAP.__dict__.get(obj_name + "_new")
+        obj = OSCAP.__dict__.get(f"{obj_name}_new")
         if obj is not None:
             # this will call the __call__ definition of OSCAP_Object
             return OSCAP_Object(obj_name)
@@ -320,8 +311,7 @@ class OSCAP_Object(object):
         (only available in Python 2.6 and newer but doesn't hurt anything in older Pythons)
         """
 
-        ret = list()
-        ret.extend(dir(type(self)))
+        ret = list(dir(type(self)))
         ret.extend(list(self.__dict__))
 
         # we intentionally don't add all functions from the library, having
@@ -329,10 +319,8 @@ class OSCAP_Object(object):
         # clutter everything...
 
         for key, v in OSCAP.__dict__.items():
-            if key.startswith(self.object + "_"):
-                # the getattr wrapper only deals with callables
-                if callable(OSCAP.__dict__[key]):
-                    ret.append(key[len(self.object) + 1:])
+            if key.startswith(f"{self.object}_") and callable(OSCAP.__dict__[key]):
+                ret.append(key[len(self.object) + 1:])
 
         # we also don't add the object_get_{name} methods as {name}, it IMO
         # only allows bugs to pass as working code
@@ -342,13 +330,9 @@ class OSCAP_Object(object):
     def __call__(self, *args, **kwargs):
         newargs = ()
         for arg in args:
-            if isinstance(arg, OSCAP_Object):
-                newargs += (arg.instance,)
-            else:
-                newargs += (arg,)
-
+            newargs += (arg.instance, ) if isinstance(arg, OSCAP_Object) else (arg, )
         # It's maybe looking for "new" ?
-        obj = OSCAP.__dict__.get(self.object + "_new")
+        obj = OSCAP.__dict__.get(f"{self.object}_new")
         if obj is not None:
             return OSCAP_Object.new(obj(*newargs))
         else:
@@ -358,9 +342,9 @@ class OSCAP_Object(object):
         if name in self.__dict__:
             return self.__dict__[name]
 
-        obj = OSCAP.__dict__.get(self.object + "_set_" + name)
+        obj = OSCAP.__dict__.get(f"{self.object}_set_{name}")
         if obj is None:
-            obj = OSCAP.__dict__.get(self.object + "_add_" + name)
+            obj = OSCAP.__dict__.get(f"{self.object}_add_{name}")
         if obj is None:
             return None
 
@@ -383,13 +367,12 @@ class OSCAP_Object(object):
             return OSCAP.oval_agent_destroy_session(self.instance)
         # print "Free on demand ", self.object
         if "instance" in self.__dict__ and self.__dict__["instance"] is not None:
-            obj = OSCAP.__dict__.get(self.object + "_free")
-            if obj is not None:
-                if callable(obj):
-                    obj(self.__dict__["instance"])
-                    dict.__setattr__(self, "instance", None)
-            else:
+            obj = OSCAP.__dict__.get(f"{self.object}_free")
+            if obj is None:
                 raise Exception("Can't free %s" % (self.object,))
+            if callable(obj):
+                obj(self.__dict__["instance"])
+                dict.__setattr__(self, "instance", None)
 
     """ ********* Implementation of non-trivial functions ********* """
 
@@ -419,45 +402,56 @@ class OSCAP_Object(object):
     def register_start_callback(self, cb, usr):
         if self.object != "xccdf_policy_model":
             raise TypeError(
-                "Wrong call of register_start_callback function on %s" % (self.object,))
+                f"Wrong call of register_start_callback function on {self.object}"
+            )
+
         return OSCAP.xccdf_policy_model_register_start_callback_py(
             self.instance, self.__start_callback, (cb, usr))
 
     def register_output_callback(self, cb, usr):
         if self.object != "xccdf_policy_model":
             raise TypeError(
-                "Wrong call of register_output_callback function on %s" % (self.object,))
+                f"Wrong call of register_output_callback function on {self.object}"
+            )
+
         return OSCAP.xccdf_policy_model_register_output_callback_py(
             self.instance, self.__output_callback, (cb, usr))
 
     def register_engine_oval(self, sess):
         if self.object != "xccdf_policy_model":
             raise TypeError(
-                "Wrong call of register_engine_oval function on %s" % (self.object,))
+                f"Wrong call of register_engine_oval function on {self.object}"
+            )
+
         return OSCAP.xccdf_policy_model_register_engine_oval(self.instance, sess.instance)
 
     def register_engine_sce(self, parameters):
         if self.object != "xccdf_policy_model":
-            raise TypeError(
-                "Wrong call of register_engine_sce function on %s" % (self.object,))
+            raise TypeError(f"Wrong call of register_engine_sce function on {self.object}")
         return OSCAP.xccdf_policy_model_register_engine_sce(self.instance, parameters.instance)
 
     def agent_eval_system(self, sess, cb, usr):
         if self.object != "oval":
             raise TypeError(
-                "Wrong call of oval_agent_eval_system function on %s" % (self.object,))
+                f"Wrong call of oval_agent_eval_system function on {self.object}"
+            )
+
         return OSCAP.oval_agent_eval_system_py(sess.instance, self.__output_callback, (cb, usr))
 
     def query_sysinfo(self):
         if self.object != "oval_probe_session_t":
             raise TypeError(
-                "Wrong call of oval_probe_session_query_sysinfo function on %s" % (self.object,))
+                f"Wrong call of oval_probe_session_query_sysinfo function on {self.object}"
+            )
+
         return OSCAP.oval_probe_session_query_sysinfo(self.instance)
 
     def query_objects(self):
         if self.object != "oval_probe_session_t":
             raise TypeError(
-                "Wrong call of oval_probe_session_query_objects function on %s" % (self.object,))
+                f"Wrong call of oval_probe_session_query_objects function on {self.object}"
+            )
+
         return OSCAP.oval_probe_session_query_objects(self.instance)
 
     """ ********* Implementation of required high level functions ********* """
@@ -494,7 +488,6 @@ class OSCAP_Object(object):
             raise TypeError(
                 "Wrong call of \"get_values_by_rule_id\" function. "
                 "Should be xccdf_policy (have %s)" % (self.object,))
-        items = []
         values = []
 
         # Case 1: check is not None -- we have recursive call
@@ -504,8 +497,7 @@ class OSCAP_Object(object):
                 for child in check.children:
                     values.extend(self.get_values_by_rule_id(id, check=child))
             else:
-                for export in check.exports:
-                    values.append(export.value)
+                values.extend(export.value for export in check.exports)
             return values
 
         # Case 2: check is None -- this is regular call of function
@@ -520,14 +512,12 @@ class OSCAP_Object(object):
                 for child in check.children:
                     values.extend(self.get_values_by_rule_id(id, check=child))
             else:
-                for export in check.exports:
-                    values.append(export.value)
-
-        for value in self.model.benchmark.get_all_values():
-            if value.id in values:
-                items.append(self.__parse_value(value))
-
-        return items
+                values.extend(export.value for export in check.exports)
+        return [
+            self.__parse_value(value)
+            for value in self.model.benchmark.get_all_values()
+            if value.id in values
+        ]
 
     def __parse_value(self, value):
         ''' Used by get_tailoring_items()  '''
@@ -633,12 +623,10 @@ class OSCAP_Object(object):
             raise TypeError(
                 "Wrong call of \"get_tailor_items\" function. "
                 "Should be xccdf_policy (have %s)" % (self.object,))
-        items = []
-
-        for value in self.model.benchmark.get_all_values():
-            items.append(self.__parse_value(value))
-
-        return items
+        return [
+            self.__parse_value(value)
+            for value in self.model.benchmark.get_all_values()
+        ]
 
     def set_tailor_items(self, items):
         """xccdf_policy.set_tailor_items(items) -- Set tailored items to selected XCCDF Profile
@@ -750,7 +738,6 @@ class OSCAP_Object(object):
             raise TypeError(
                 "Wrong call of \"get_all_rules\" function. "
                 "Should be xccdf_policy (have %s)" % (self.object,))
-        pass  # TODO
 
     def set_rules(self, rules):
         """xccdf_policy.set_rules(rules) -- Set which rules are selected by given XCCDF Profile
@@ -828,10 +815,7 @@ class OSCAP_Object(object):
         sessions = {}
         names = {}
         for file in files.strings:
-            if file in paths:
-                f_OVAL = paths[file]
-            else:
-                f_OVAL = os.path.join(dirname, file)
+            f_OVAL = paths[file] if file in paths else os.path.join(dirname, file)
             if os.path.exists(f_OVAL):
                 def_model = oval.definition_model_import_source(
                     OSCAP.oscap_source_new_from_file(f_OVAL))
@@ -857,7 +841,9 @@ class OSCAP_Object(object):
             else:
                 # TODO manage properly warnings/debug
                 print(
-                    "WARNING: Skipping %s file which is referenced from XCCDF content" % (f_OVAL,))
+                    f"WARNING: Skipping {f_OVAL} file which is referenced from XCCDF content"
+                )
+
         files.free()
         return {"def_models": def_models, "sessions": sessions,
                 "policy_model": policy_model, "xccdf_path": f_XCCDF, "names": names
@@ -904,7 +890,7 @@ class OSCAP_Object(object):
         for path in sessions.keys():
             sess = sessions[path]
             rmodel = oval.agent_get_results_model(sess)
-            pfile = path + ".result.xml"
+            pfile = f"{path}.result.xml"
             OSCAP.oval_results_model_export(
                 rmodel.instance, None, os.path.join(dirname, pfile))
             files.append(pfile)
@@ -956,7 +942,6 @@ class XCCDF_Class(OSCAP_Object):
     def __init__(self):
         dict.__setattr__(self, "object", "xccdf")
         dict.__setattr__(self, "version", OSCAP.xccdf_benchmark_supported())
-        pass
 
     def __repr__(self):
         return "<Oscap Object of type 'XCCDF Class' at %s>" % (hex(id(self)),)
@@ -976,7 +961,6 @@ class OVAL_Class(OSCAP_Object):
         dict.__setattr__(self, "object", "oval")
         dict.__setattr__(
             self, "version", OSCAP.oval_definition_model_supported())
-        pass
 
     def __repr__(self):
         return "<Oscap Object of type 'OVAL Class' at %s>" % (hex(id(self)),)
@@ -992,8 +976,6 @@ class CVE_Class(OSCAP_Object):
 
     def __init__(self):
         dict.__setattr__(self, "object", "cve")
-#        dict.__setattr__(self, "version", OSCAP.cve_model_supported())
-        pass
 
     def __repr__(self):
         return "<Oscap Object of type 'CVE Class' at %s>" % (hex(id(self)),)
@@ -1009,11 +991,11 @@ class CPE_Class(OSCAP_Object):
 
     def __init__(self):
         dict.__setattr__(self, "object", "cpe")
-        dict.__setattr__(self, "version", "CPE Lang: %s; CPE Dict: %s; CPE Name: %s"
-                         % (OSCAP.cpe_lang_model_supported(),
-                            OSCAP.cpe_dict_model_supported(),
-                            OSCAP.cpe_name_supported()))
-        pass
+        dict.__setattr__(
+            self,
+            "version",
+            f"CPE Lang: {OSCAP.cpe_lang_model_supported()}; CPE Dict: {OSCAP.cpe_dict_model_supported()}; CPE Name: {OSCAP.cpe_name_supported()}",
+        )
 
     def __repr__(self):
         return "<Oscap Object of type 'CPE Class' at %s>" % (hex(id(self)),)
@@ -1030,7 +1012,6 @@ class CVSS_Class(OSCAP_Object):
     def __init__(self):
         dict.__setattr__(self, "object", "cvss")
         dict.__setattr__(self, "version", OSCAP.cvss_model_supported())
-        pass
 
     def __repr__(self):
         return "<Oscap Object of type 'CVSS Class' at %s>" % (hex(id(self)),)
@@ -1046,7 +1027,6 @@ class SCE_Class(OSCAP_Object):
 
     def __init__(self):
         dict.__setattr__(self, "object", "sce")
-        pass
 
     def __repr__(self):
         return "<Oscap Object of type 'SCE Class' at %s>" % (hex(id(self)),)

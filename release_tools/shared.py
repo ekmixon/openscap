@@ -14,10 +14,7 @@ def get_milestone(repo, name):
     matches = [m for m in milestones if m.title == name]
     assert len(matches) <= 1, \
         f"Expected to find at most one milestone {name}, found {len(matches)}"
-    if len(matches) == 0:
-        return None
-    else:
-        return matches[0]
+    return matches[0] if matches else None
 
 
 def get_github(args):
@@ -28,13 +25,12 @@ def get_github(args):
 
 
 def get_repo(github, owner):
-    repo = github.get_repo(f"{owner}/openscap")
-    return repo
+    return github.get_repo(f"{owner}/openscap")
 
 
 def version_type(string):
     components = string.split(".")
-    shortest_component_len = min([len(x) for x in components])
+    shortest_component_len = min(len(x) for x in components)
     if len(components) != 3 or shortest_component_len == 0:
         msg = (
             "Expected version number of form X.Y.Z, where X, Y, Z are strings. "

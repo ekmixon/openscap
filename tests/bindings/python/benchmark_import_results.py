@@ -16,29 +16,28 @@ benchmark = oscap.xccdf.benchmark_import(get_path("samples/xccdf_sample_results.
 if benchmark.instance is None:
     raise Exception("Cannot import the benchmark {0}"
                     .format(get_path("samples/xccdf_sample_results.xml")))
-else:
-    print("Benchmark id: ", benchmark.get_id())
-    results = benchmark.get_results()
-    test_result = results.pop()
-    print(test_result.get_id())
+print("Benchmark id: ", benchmark.get_id())
+results = benchmark.get_results()
+test_result = results.pop()
+print(test_result.get_id())
 
-    for rs in test_result.get_rule_results():
-        idref, result = rs.get_idref(), rs.get_result()
-        print(idref, result2str(result))
+for rs in test_result.get_rule_results():
+    idref, result = rs.get_idref(), rs.get_result()
+    print(idref, result2str(result))
 
-        if (idref == "R-SHOULD_PASS" and
-                result != oscap.xccdf.XCCDF_RESULT_PASS):
+    if (idref == "R-SHOULD_PASS" and
+            result != oscap.xccdf.XCCDF_RESULT_PASS):
 
-            raise Exception("Rule result for {0} should be PASS but is currently {1}."
-                            .format(idref,
-                                    result2str(result)))
+        raise Exception("Rule result for {0} should be PASS but is currently {1}."
+                        .format(idref,
+                                result2str(result)))
 
-        elif (idref == "R-SHOULD_FAIL" and
-              result != oscap.xccdf.XCCDF_RESULT_FAIL):
+    elif (idref == "R-SHOULD_FAIL" and
+          result != oscap.xccdf.XCCDF_RESULT_FAIL):
 
-            raise Exception("Rule result for {0} should be FAIL but is currently {1}."
-                            .format(idref,
-                                    result2str(result)))
+        raise Exception("Rule result for {0} should be FAIL but is currently {1}."
+                        .format(idref,
+                                result2str(result)))
 
 
 # Now ensure that benchmark_import return None if the file doesn't exists

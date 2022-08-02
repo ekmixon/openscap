@@ -48,11 +48,16 @@ if subprocess.call(["rpmbuild", "--version"], stdout = sys.stdout, stderr = sys.
 def get_rpmbuild_paths():
     sources = subprocess.check_output(["rpm", "--eval", "%{_sourcedir}"]).strip().decode('utf-8')
 
-    if not os.path.exists(sources):
-        if subprocess.call(["rpmdev-setuptree"], stdout = sys.stdout, stderr = sys.stderr) != 0:
-            raise CannotContinueError("Failed to setup rpmbuild tree. Please make sure you have rpmdev-setuptree "
-                "installed, or set it up manually. The SOURCES directory (%%{_sourcedir}) was expected at "
-                "'%s'" % (sources))
+    if (
+        not os.path.exists(sources)
+        and subprocess.call(
+            ["rpmdev-setuptree"], stdout=sys.stdout, stderr=sys.stderr
+        )
+        != 0
+    ):
+        raise CannotContinueError("Failed to setup rpmbuild tree. Please make sure you have rpmdev-setuptree "
+            "installed, or set it up manually. The SOURCES directory (%%{_sourcedir}) was expected at "
+            "'%s'" % (sources))
 
     rpm = subprocess.check_output(["rpm", "--eval", "%{_rpmdir}"]).strip().decode('utf-8')
     srpm = subprocess.check_output(["rpm", "--eval", "%{_srcrpmdir}"]).strip().decode('utf-8')
@@ -65,15 +70,13 @@ def get_rpmbuild_paths():
 
 def copy_sources_to_rpmbuild(rpmbuild_sources_path, files):
     for f in files:
-        shutil.copyfile(f.name, "%s/%s" % (rpmbuild_sources_path, os.path.basename(f.name)))
+        shutil.copyfile(f.name, f"{rpmbuild_sources_path}/{os.path.basename(f.name)}")
 
 def make_sources_list(files):
-    ret = ""
-
-    for (i, f) in enumerate(files):
-        ret += "Source%i: %s\n" % (i, os.path.basename(f.name))
-
-    return ret
+    return "".join(
+        "Source%i: %s\n" % (i, os.path.basename(f.name))
+        for i, f in enumerate(files)
+    )
 
 def make_installer(scap_location, files):
     prepper = ""
@@ -219,7 +222,7 @@ def main():
         name, _ = os.path.splitext(os.path.basename(args.files[0].name))
 
     temp_dir = tempfile.mkdtemp()
-    spec_file = open("%s/%s.spec" % (temp_dir, name), "w")
+    spec_file = open(f"{temp_dir}/{name}.spec", "w")
     try:
         create_spec("templates/package.spec",
             name,
@@ -231,13 +234,13 @@ def main():
 
         ret = subprocess.call(["rpmbuild", "-ba", spec_file_path], stdout = sys.stdout)
         if ret != 0:
-            raise CannotContinueError("Failed to build RPM and SRPM for %s" % spec_file_path)
+            raise CannotContinueError(f"Failed to build RPM and SRPM for {spec_file_path}")
 
     finally:
         shutil.rmtree(temp_dir)
 
-    rpm_basename = "%s-%s-%s.noarch.rpm" % (name, args.pkg_version, args.pkg_release)
-    srpm_basename = "%s-%s-%s.src.rpm" % (name, args.pkg_version, args.pkg_release)
+    rpm_basename = f"{name}-{args.pkg_version}-{args.pkg_release}.noarch.rpm"
+    srpm_basename = f"{name}-{args.pkg_version}-{args.pkg_release}.src.rpm"
 
     shutil.copy(os.path.join(rpmbuild_rpm_path, "noarch", rpm_basename), os.path.join(args.rpm_destination, rpm_basename))
     if args.srpm_destination is not None:

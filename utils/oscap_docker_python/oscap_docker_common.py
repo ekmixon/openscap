@@ -30,21 +30,21 @@ OscapResult = collections.namedtuple("OscapResult", ("returncode", "stdout", "st
 
 
 def oscap_chroot(chroot_path, oscap_binary, oscap_args, target_name, local_env=[]):
-        '''
+    '''
         Wrapper running oscap_chroot on an OscapDockerScan OscapAtomicScan object
         '''
-        os.environ["OSCAP_PROBE_ROOT"] = os.path.join(chroot_path)
-        os.environ["OSCAP_EVALUATION_TARGET"] = target_name
-        os.environ["OSCAP_CONTAINER_VARS"] = '\n'.join(local_env)
+    os.environ["OSCAP_PROBE_ROOT"] = os.path.join(chroot_path)
+    os.environ["OSCAP_EVALUATION_TARGET"] = target_name
+    os.environ["OSCAP_CONTAINER_VARS"] = '\n'.join(local_env)
 
-        cmd = [oscap_binary] + [x for x in oscap_args]
+    cmd = [oscap_binary] + list(oscap_args)
 
-        oscap_process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
-                                         stderr=subprocess.PIPE)
-        oscap_stdout, oscap_stderr = oscap_process.communicate()
-        return OscapResult(oscap_process.returncode,
-                           oscap_stdout.decode("utf-8"),
-                           oscap_stderr.decode("utf-8"))
+    oscap_process = subprocess.Popen(cmd, stdout=subprocess.PIPE,
+                                     stderr=subprocess.PIPE)
+    oscap_stdout, oscap_stderr = oscap_process.communicate()
+    return OscapResult(oscap_process.returncode,
+                       oscap_stdout.decode("utf-8"),
+                       oscap_stderr.decode("utf-8"))
 
 # TODO replace by _get_cpe (in order to indentify any containerized system)
 

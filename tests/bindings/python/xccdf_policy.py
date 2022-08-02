@@ -75,7 +75,7 @@ if 'xccdf_com.example.www_profile_1' not in profiles:
                     "but haven't be found. Current profiles : {0}".format(', '.join(profiles)))
 
 profile = pm.get_benchmark().get_profile_by_id("xccdf_com.example.www_profile_1")
-print("selected profile : " + profile.get_id())
+print(f"selected profile : {profile.get_id()}")
 
 profile_not_defined = pm.get_benchmark().get_profile_by_id("xccdf_com.example.profile_not_exists")
 if profile_not_defined is not None:

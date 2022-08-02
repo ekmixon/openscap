@@ -15,7 +15,7 @@ sess = oscap.xccdf.session_new(get_path("samples/xccdf_sample.xml"))
 
 res = sess.load()
 
-if not res == 0:
+if res != 0:
     raise ValueError("Return value of xccdf_session_load isn't 0 but {0} !".format(res))
 
 '''
@@ -27,7 +27,7 @@ rules = {"R-SHOULD_PASS": oscap.common.XCCDF_RESULT_PASS,
 
 res = sess.evaluate()
 
-if not res == 0:
+if res != 0:
     raise ValueError("Return value of xccdf_session_evaluate isn't 0 but {0} !".format(res))
 
 if sess.get_base_score() != 50:

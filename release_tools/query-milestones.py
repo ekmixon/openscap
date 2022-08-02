@@ -5,7 +5,7 @@ import argparse as ap
 import shared
 
 
-ACTIONS = dict()
+ACTIONS = {}
 
 
 def action(key):
@@ -17,14 +17,12 @@ def action(key):
 
 def get_closed_issues(repo, milestone):
     issues_and_prs = repo.get_issues(milestone=milestone, state="closed")
-    issues_only = [i for i in issues_and_prs if i.pull_request is None]
-    return issues_only
+    return [i for i in issues_and_prs if i.pull_request is None]
 
 
 def get_closed_prs(repo, milestone):
     issues_and_prs = repo.get_issues(milestone=milestone, state="closed")
-    prs_only = [i for i in issues_and_prs if i.pull_request is not None]
-    return prs_only
+    return [i for i in issues_and_prs if i.pull_request is not None]
 
 
 @action("issues-closed")

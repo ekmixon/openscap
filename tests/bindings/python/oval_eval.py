@@ -48,7 +48,7 @@ def oval_sample_callback(ovdef, usr):
 
     try:
         # .eval or .get_result return the same thing
-        usr['results'].append(ovdef.get_id() + " => " + result2str(ovdef.get_result()))
+        usr['results'].append(f"{ovdef.get_id()} => {result2str(ovdef.get_result())}")
 
         # retrieve the tests tree and replace test_results by [subtype => result]
         tests_tree = browse_criteria(ovdef.get_criteria(), 1)

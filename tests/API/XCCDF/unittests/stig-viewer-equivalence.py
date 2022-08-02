@@ -43,14 +43,12 @@ class RuleResult(object):
 
 
 def fname_to_etree(fname):
-    input_tree = ElementTree.parse(fname)
-    return input_tree
+    return ElementTree.parse(fname)
 
 
 def get_rule_results_from_etree(tree):
     xpath_expr =  ".//{%s}rule-result" % NAMESPACES["profile_ns"]
-    xccdfs = tree.findall(xpath_expr)
-    return xccdfs
+    return tree.findall(xpath_expr)
 
 
 def extract_results_from_file(fname):

@@ -12,10 +12,7 @@ oval_result_ns = "http://oval.mitre.org/XMLSchema/oval-results-5"
 
 def get_test_property(test, property_name):
     property_element = test.find(property_name)
-    if property_element is not None:
-        return property_element.text
-    else:
-        return None
+    return property_element.text if property_element is not None else None
 
 def get_datastream_file_name(test):
     return get_test_property(test, "datastreamFile")
@@ -56,30 +53,30 @@ def run_test(test, scanner, output_dir):
     profile = get_profile_name(test)
     command = scanner
     if datastream:
-        results_file = os.path.join(output_dir, test_id + ".results_arf.xml")
+        results_file = os.path.join(output_dir, f"{test_id}.results_arf.xml")
         command += " xccdf eval"
         if are_remote_resources_allowed(test):
             command += " --fetch-remote-resources"
         if datastream_id:
-            command += " --datastream-id " + datastream_id
+            command += f" --datastream-id {datastream_id}"
         if tailoring_id:
-            command += " --tailoring-id " + tailoring_id
+            command += f" --tailoring-id {tailoring_id}"
         if profile:
-            command += " --profile " + profile
+            command += f" --profile {profile}"
         if benchmark_id:
-            command += " --benchmark-id " + benchmark_id
-        command += " --results-arf " + results_file + " " + datastream
+            command += f" --benchmark-id {benchmark_id}"
+        command += f" --results-arf {results_file} {datastream}"
     elif oval:
-        results_file = test_id + ".results_oval.xml"
+        results_file = f"{test_id}.results_oval.xml"
         command += " oval eval"
         if oval_variables:
-            command += " --variables " + oval_variables
-        command += " --results " + results_file + " " + oval
+            command += f" --variables {oval_variables}"
+        command += f" --results {results_file} {oval}"
     else:
         sys.stderr.write("Unable to run the test! Check the catalog.xml.\n")
         return None
     print(command)
-    with open(os.path.join(output_dir, test_id + ".stdout"), "w") as stdout_file:
+    with open(os.path.join(output_dir, f"{test_id}.stdout"), "w") as stdout_file:
         oscap_return_code = subprocess.call(["bash", "-c", command],
                                             stdout=stdout_file)
         # 0 is success, 2 is success but not compliant
@@ -99,21 +96,21 @@ def find_actual_result_in_arf(arf_root, rule_id):
             result = rule_result.find("{%s}result" % xccdf_ns)
             if result is None:
                 result = rule_result.find("{%s}result" % xccdf_1_1_ns)
-            if result is not None:
-                return result.text
-            else:
-                return None
+            return result.text if result is not None else None
     return None
 
 def find_actual_result_in_oval(oval_root, definition_id):
     definition_results = oval_root.findall("{" + oval_result_ns + "}results/{" +
             oval_result_ns + "}system/{" + oval_result_ns + "}definitions/{" +
             oval_result_ns + "}definition")
-    for definition_result in definition_results:
-        if definition_result.get("definition_id") == definition_id:
-            result = definition_result.get("result")
-            return result
-    return None
+    return next(
+        (
+            definition_result.get("result")
+            for definition_result in definition_results
+            if definition_result.get("definition_id") == definition_id
+        ),
+        None,
+    )
 
 def check_results(test, output_dir):
     test_id = test.get("suiteId")
@@ -122,22 +119,22 @@ def check_results(test, output_dir):
     report_type = None
     for x in all_expected_results_elements:
         expected_type = x.get("reportType")
-        if expected_type == "arf" or expected_type == "oval":
+        if expected_type in ["arf", "oval"]:
             expected_results = x
             report_type = expected_type
     if expected_results is None:
         print("Catalog doesn't provide expected results.")
         return False
     if report_type == "arf":
-        results_file = test_id + ".results_arf.xml"
+        results_file = f"{test_id}.results_arf.xml"
     elif report_type == "oval":
-        results_file = test_id + ".results_oval.xml"
+        results_file = f"{test_id}.results_oval.xml"
     try:
         actual_results_xml_tree = etree.parse(
             os.path.join(output_dir, results_file)
         )
     except IOError:
-        print("ERROR: No results were generated in test " + test_id)
+        print(f"ERROR: No results were generated in test {test_id}")
         return False
     actual_results_root = actual_results_xml_tree.getroot()
     rules = expected_results.findall("result")
@@ -153,7 +150,10 @@ def check_results(test, output_dir):
             test_result = False
             actual_result = "<None>"
         if actual_result != expected_result:
-            print("Failing rule: rule_id: " + rule_id + ", expected: " + expected_result + ", actual: " + actual_result)
+            print(
+                f"Failing rule: rule_id: {rule_id}, expected: {expected_result}, actual: {actual_result}"
+            )
+
             test_result = False
     return test_result
 
@@ -179,7 +179,7 @@ if __name__ == "__main__":
     return_value = 0
     for test in catalog.findall("testSuite"):
         test_id = test.get("suiteId")
-        print("# " + test_id)
+        print(f"# {test_id}")
         schema = get_schema(test)
         if schema == "windows":
             print("SKIPPED")

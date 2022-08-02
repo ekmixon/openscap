@@ -28,12 +28,10 @@ def browse_criteria(crit_node, mode=0):
     '''
 
     # init the critria list
-    rs = list()
+    rs = []
 
     if crit_node.get_type() == oscap.oval.OVAL_NODETYPE_CRITERIA:
-        for c in crit_node.get_subnodes():
-            rs.append(browse_criteria(c, mode))
-
+        rs.extend(browse_criteria(c, mode) for c in crit_node.get_subnodes())
     elif crit_node.get_type() == oscap.oval.OVAL_NODETYPE_CRITERION:
         if mode == 0:
             rs.append(crit_node.get_test())

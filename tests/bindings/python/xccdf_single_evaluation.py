@@ -28,12 +28,12 @@ for rule in rules:
     print("evaluating rule {0}".format(rule[0]))
     sess.set_rule(rule[0])
 
-    if not res == 0:
+    if res != 0:
         raise ValueError("Return value of xccdf_session_load isn't 0 but {0} !".format(res))
 
     res = sess.evaluate()
 
-    if not res == 0:
+    if res != 0:
         raise ValueError("Return value of xccdf_session_evaluate isn't 0 but {0} !".format(res))
 
     if sess.get_base_score() != rule[2]:

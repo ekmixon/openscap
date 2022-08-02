@@ -58,30 +58,29 @@ class OscapDockerScan(object):
 
         if self.is_image:
             self.image_name, self.config = self._get_image_name_and_config(target)
-            if self.image_name:
-                print("Running given image in a temporary container ...")
-                self.container_name = "tmp_oscap_" + str(uuid.uuid1())
-
-                try:
-                    tmp_cont = self.client.create_container(
-                        self.image_name, 'bash', name=self.container_name, tty=True)
-                    # tty=True is required in order to keep the container running
-                    self.client.start(container=tmp_cont.get('Id'))
-
-                    self.config = self.client.inspect_container(self.container_name)
-                    if int(self.config["State"]["Pid"]) == 0:
-                        sys.stderr.write("Cannot run image {0}.\n".format(self.image_name))
-                    else:
-                        self.pid = int(self.config["State"]["Pid"])
-                except Exception as e:
-                    sys.stderr.write("Cannot run image {0}.\n".format(self.image_name))
-                    raise e
-            else:
+            if not self.image_name:
                 raise ValueError("Image {0} not found.\n".format(target))
 
+            print("Running given image in a temporary container ...")
+            self.container_name = f"tmp_oscap_{str(uuid.uuid1())}"
+
+            try:
+                tmp_cont = self.client.create_container(
+                    self.image_name, 'bash', name=self.container_name, tty=True)
+                # tty=True is required in order to keep the container running
+                self.client.start(container=tmp_cont.get('Id'))
+
+                self.config = self.client.inspect_container(self.container_name)
+                if int(self.config["State"]["Pid"]) == 0:
+                    sys.stderr.write("Cannot run image {0}.\n".format(self.image_name))
+                else:
+                    self.pid = int(self.config["State"]["Pid"])
+            except Exception as e:
+                sys.stderr.write("Cannot run image {0}.\n".format(self.image_name))
+                raise e
         else:
             self.container_name, self.config = \
-                self._get_container_name_and_config(target)
+                    self._get_container_name_and_config(target)
 
             # is the container running ?
             if int(self.config["State"]["Pid"]) == 0:
@@ -90,7 +89,7 @@ class OscapDockerScan(object):
 
                 self.client_api.containers.get(self.container_name).start()
                 self.container_name, self.config = \
-                    self._get_container_name_and_config(target)
+                        self._get_container_name_and_config(target)
 
                 if int(self.config["State"]["Pid"]) == 0:
                     sys.stderr.write(
@@ -120,10 +119,9 @@ class OscapDockerScan(object):
             self.client.stop(self.container_name)
             self.client.remove_container(self.container_name)
             print("Temporary container {0} cleaned".format(self.container_name))
-        else:
-            if self.stop_at_end:
-                # just stop the container if the tool have started it.
-                self.client.stop(self.container_name)
+        elif self.stop_at_end:
+            # just stop the container if the tool have started it.
+            self.client.stop(self.container_name)
 
     def _get_image_name_and_config(self, target):
         '''
@@ -184,7 +182,7 @@ class OscapDockerScan(object):
         fetch = getInputCVE(tmp_dir)
         cve_file = fetch._fetch_single(dist)
 
-        print("CVEs downloaded in " + cve_file)
+        print(f"CVEs downloaded in {cve_file}")
 
         args = ("oval", "eval")
         for a in scan_args:

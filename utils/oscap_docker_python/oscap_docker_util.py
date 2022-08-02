@@ -130,7 +130,7 @@ class OscapHelpers(object):
                 name = ", ".join(image["RepoTags"])
             else:
                 name = image["Id"][len("sha256:"):][:10]
-            return "docker-image://{}".format(name), image["Config"]
+            return f"docker-image://{name}", image["Config"]
         except docker.errors.NotFound:
             try:
                 container = client.inspect_container(target)
@@ -138,7 +138,7 @@ class OscapHelpers(object):
                     name = container["Name"].lstrip("/")
                 else:
                     name = container["Id"][:10]
-                return "docker-container://{}".format(name), container["Config"]
+                return f"docker-container://{name}", container["Config"]
             except docker.errors.NotFound:
                 return "unknown", {}
 
@@ -210,10 +210,7 @@ class OscapAtomicScan(object):
         '''
         Ensure existing temporary directory
         '''
-        if self.mnt_dir is None:
-            return tempfile.mkdtemp()
-        else:
-            return self.mnt_dir
+        return tempfile.mkdtemp() if self.mnt_dir is None else self.mnt_dir
 
     def _remove_mnt_dir(self, mnt_dir):
         '''
@@ -228,11 +225,7 @@ class OscapAtomicScan(object):
         Remember actual mounted fs in 'rootfs' for devicemapper
         '''
         rootfs_path = os.path.join(mnt_dir, 'rootfs')
-        if os.path.exists(rootfs_path):
-            chroot = rootfs_path
-        else:
-            chroot = mnt_dir
-        return chroot
+        return rootfs_path if os.path.exists(rootfs_path) else mnt_dir
 
     def scan_cve(self, image, scan_args):
         '''

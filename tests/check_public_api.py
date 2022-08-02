@@ -61,7 +61,7 @@ def get_public_symbols_from_header(header_path):
         if not match:
             print("Invalid prototype '%s'" % p, file=sys.stderr)
             continue
-        symbol_name = match.group(1)
+        symbol_name = match[1]
         symbols.add(symbol_name)
     return symbols
 
@@ -110,12 +110,15 @@ def analyze_project_artifacts(src_dir):
         raise RuntimeError
     os.chdir(build_dir)
     with tempfile.TemporaryDirectory() as prefix:
-        cmake_command = ["cmake",
-                         "-DENABLE_PYTHON3=FALSE",
-                         "-DENABLE_PERL=FALSE",
-                         "-DCMAKE_INSTALL_PREFIX=" + prefix,
-                         "-DENABLE_TESTS=FALSE",
-                         ".."]
+        cmake_command = [
+            "cmake",
+            "-DENABLE_PYTHON3=FALSE",
+            "-DENABLE_PERL=FALSE",
+            f"-DCMAKE_INSTALL_PREFIX={prefix}",
+            "-DENABLE_TESTS=FALSE",
+            "..",
+        ]
+
 
         _run_command(cmake_command)
         make_command = ["make"]
@@ -144,16 +147,14 @@ def main():
     print("Public header symbols: %d\n" % len(header_symbols))
     print()
 
-    so_only = so_symbols.difference(header_symbols)
-    if so_only:
+    if so_only := so_symbols.difference(header_symbols):
         print("The following %d symbols are exported in binary, "
               "but are not present in public header files:" % len(so_only))
         for s in sorted(so_only):
             print(s)
         print()
 
-    header_only = header_symbols.difference(so_symbols)
-    if header_only:
+    if header_only := header_symbols.difference(so_symbols):
         print("The following %d symbols are present in public header files, "
               "but are not exported in binary:" % len(header_only))
         for s in sorted(header_only):

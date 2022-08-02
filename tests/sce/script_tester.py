@@ -40,20 +40,21 @@ for g in args.globs:
 
 import os
 
-xccdf_result_map = dict()
-xccdf_result_map["XCCDF_RESULT_PASS"] = 101
-xccdf_result_map["XCCDF_RESULT_FAIL"] = 102
-xccdf_result_map["XCCDF_RESULT_ERROR"] = 103
-xccdf_result_map["XCCDF_RESULT_UNKNOWN"] = 104
-xccdf_result_map["XCCDF_RESULT_NOT_APPLICABLE"] = 105
-xccdf_result_map["XCCDF_RESULT_NOT_CHECKED"] = 106
-xccdf_result_map["XCCDF_RESULT_NOT_SELECTED"] = 107
-xccdf_result_map["XCCDF_RESULT_INFORMATIONAL"] = 108
-xccdf_result_map["XCCDF_RESULT_FIXED"] = 109
+xccdf_result_map = {
+    "XCCDF_RESULT_PASS": 101,
+    "XCCDF_RESULT_FAIL": 102,
+    "XCCDF_RESULT_ERROR": 103,
+    "XCCDF_RESULT_UNKNOWN": 104,
+    "XCCDF_RESULT_NOT_APPLICABLE": 105,
+    "XCCDF_RESULT_NOT_CHECKED": 106,
+    "XCCDF_RESULT_NOT_SELECTED": 107,
+    "XCCDF_RESULT_INFORMATIONAL": 108,
+    "XCCDF_RESULT_FIXED": 109,
+}
 
-xccdf_reverse_result_map = dict()
-for key, value in xccdf_result_map.items():
-    xccdf_reverse_result_map[value] = key
+xccdf_reverse_result_map = {
+    value: key for key, value in xccdf_result_map.items()
+}
 
 # set all XCCDF result types as environment variables
 # (this is especially useful for bash scripts)
@@ -63,10 +64,10 @@ for key, value in xccdf_result_map.items():
 import subprocess
 
 for file_path in files:
-    result = subprocess.call(["./%s" % (file_path)])
-    if result in xccdf_reverse_result_map:
-        result_text = xccdf_reverse_result_map[result]
-    else:
-        result_text = "Unknown exit code %i" % (result)
+    result = subprocess.call([f"./{file_path}"])
+    result_text = xccdf_reverse_result_map.get(
+        result, "Unknown exit code %i" % (result)
+    )
+
     print("Result of '%s' is %s" % (file_path, result_text))
 
